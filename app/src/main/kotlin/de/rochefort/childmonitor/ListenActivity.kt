@@ -50,6 +50,7 @@ class ListenActivity : Activity() {
             volumeView.volumeHistory = bs.volumeHistory
             bs.onUpdate = { volumeView.postInvalidate() }
             bs.onError = { postErrorMessage() }
+            bs.onStatusChange = { status -> postStatus(status) }
         }
 
         override fun onServiceDisconnected(className: ComponentName) {
@@ -100,6 +101,11 @@ class ListenActivity : Activity() {
     fun postErrorMessage() {
         val status = findViewById<TextView>(R.id.textStatus)
         status.post { status.setText(R.string.disconnected) }
+    }
+
+    fun postStatus(status: String) {
+        val statusText = findViewById<TextView>(R.id.textStatus)
+        statusText.post { statusText.text = status }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -57,12 +57,14 @@ privacy, and modernization before larger feature work.
 - ✅ Show the number of connected parent devices in the child UI ("Connected: X parents").
 - ✅ NSD unregisters only when max clients reached (new clients can connect until then).
 
-## 7. Improve Parent Playback
+## 7. Improve Parent Playback ✅
 
-- Reduce playback latency with a small controlled jitter buffer.
-- Detect stream loss quickly and show clear UI feedback.
-- Add optional reconnect behavior.
-- Play an alert only when the stream is truly lost, not for transient recoverable states.
+- ✅ Add 100ms jitter buffer for smooth playback (smooths network jitter).
+- ✅ Two-stage stream loss detection: 5s "disrupted" (UI feedback) + 10s "lost" (alert).
+- ✅ Auto-reconnect: 5 attempts, 2s delay between each (10s total recovery time).
+- ✅ Alert plays ONLY when stream is truly lost (after reconnect exhausted or 10s timeout).
+- ✅ Status updates: "Connected" → "Connection disrupted..." → "Reconnecting (X/5)..." → "Disconnected".
+- ✅ Separate receive and playback loops (receive fills buffer, playback consumes from buffer).
 
 ## 8. Refresh the UI and UX
 

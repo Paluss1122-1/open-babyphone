@@ -35,6 +35,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import de.rochefort.childmonitor.audio.FrameCodec
 import de.rochefort.childmonitor.audio.FrameHeader
+import de.rochefort.childmonitor.audio.JitterBuffer
 import java.io.IOException
 import java.net.Socket
 
@@ -126,25 +127,56 @@ class ListenService : Service() {
 
     var onError: (() -> Unit)? = null
     var onUpdate: (() -> Unit)? = null
+    var onStatusChange: ((String) -> Unit)? = null
+    private var reconnectAttempts = 0
+    private val jitterBuffer = JitterBuffer()
+
     private fun doListen(address: String?, port: Int, pairingCode: String?) {
         val lt = Thread {
-            try {
-                val socket = Socket(address, port)
-                socket.soTimeout = 30_000
-                sendPairingCode(socket, pairingCode)
-                val success = streamAudio(socket, pairingCode)
-                if (!success) {
-                    playAlert()
-                    onError?.invoke()
+            var shouldReconnect = false
+            do {
+                try {
+                    val socket = Socket(address, port)
+                    socket.soTimeout = 30_000
+                    sendPairingCode(socket, pairingCode)
+                    reconnectAttempts = 0
+                    shouldReconnect = !streamAudio(socket, pairingCode)
+                    
+                    if (shouldReconnect && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                        reconnectAttempts++
+                        Log.i(TAG, "Reconnecting (${reconnectAttempts}/$MAX_RECONNECT_ATTEMPTS)...")
+                        postStatus("Reconnecting ($reconnectAttempts/$MAX_RECONNECT_ATTEMPTS)...")
+                        Thread.sleep(RECONNECT_DELAY_MS)
+                    } else if (shouldReconnect) {
+                        Log.e(TAG, "Max reconnect attempts reached")
+                        playAlert()
+                        onError?.invoke()
+                    }
+                } catch (e: IOException) {
+                    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                        reconnectAttempts++
+                        Log.w(TAG, "Connection error, reconnecting (${reconnectAttempts}/$MAX_RECONNECT_ATTEMPTS)", e)
+                        postStatus("Reconnecting ($reconnectAttempts/$MAX_RECONNECT_ATTEMPTS)...")
+                        Thread.sleep(RECONNECT_DELAY_MS)
+                    } else {
+                        Log.e(TAG, "Error opening socket to $address on port $port", e)
+                        playAlert()
+                        onError?.invoke()
+                        shouldReconnect = false
+                    }
                 }
-            } catch (e : IOException) {
-                Log.e(TAG, "Error opening socket to $address on port $port", e)
-                playAlert()
-                onError?.invoke()
-            }
+            } while (shouldReconnect && reconnectAttempts <= MAX_RECONNECT_ATTEMPTS)
         }
         this.listenThread = lt
         lt.start()
+    }
+
+    private fun postStatus(status: String) {
+        onStatusChange?.let { callback ->
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                callback(status)
+            }
+        }
     }
 
     private fun sendPairingCode(socket: Socket, pairingCode: String?) {
@@ -199,19 +231,32 @@ class ListenService : Service() {
         }
         var expectedSeqNum = 0
         var lastFrameTime = System.currentTimeMillis()
-        var heartbeatCheckTime = System.currentTimeMillis()
+        var streamDisruptedTime: Long? = null
 
         val decodedBuffer = ShortArray(byteBufferSize * 2)
+        var streamRunning = true
+        
         try {
-            while (!Thread.currentThread().isInterrupted) {
+            // Receive loop - fill jitter buffer
+            while (streamRunning && !Thread.currentThread().isInterrupted) {
                 val currentTime = System.currentTimeMillis()
-                if (currentTime - heartbeatCheckTime > 2000) {
-                    if (currentTime - lastFrameTime > AudioCodecDefines.HEARTBEAT_TIMEOUT_MS) {
-                        Log.e(TAG, "No heartbeat for ${AudioCodecDefines.HEARTBEAT_TIMEOUT_MS}ms, connection dead")
-                        return false
-                    }
-                    heartbeatCheckTime = currentTime
+                val timeSinceLastFrame = currentTime - lastFrameTime
+                
+                // Check for stream disruption (5s) and loss (10s)
+                if (timeSinceLastFrame > STREAM_LOST_MS) {
+                    Log.e(TAG, "Stream lost - no frames for ${timeSinceLastFrame}ms")
+                    return false
                 }
+                if (timeSinceLastFrame > STREAM_DISRUPTED_MS) {
+                    if (streamDisruptedTime == null) {
+                        streamDisruptedTime = currentTime
+                        Log.w(TAG, "Stream disrupted - no frames for ${timeSinceLastFrame}ms")
+                        postStatus("Connection disrupted...")
+                    }
+                } else {
+                    streamDisruptedTime = null
+                }
+
                 val header = FrameHeader.readFrom(inputStream)
                     ?: run {
                         Log.e(TAG, "Failed to read frame header")
@@ -255,7 +300,22 @@ class ListenService : Service() {
                     continue
                 }
 
-                val decoded: Int = AudioCodecDefines.CODEC.decode(decodedBuffer, frame.ulawData, frame.ulawData.size, 0)
+                // Add to jitter buffer
+                val jitterFrame = JitterBuffer.DecodedFrame(
+                    frame.seqNum,
+                    frame.timestampMs,
+                    frame.ulawData
+                )
+                jitterBuffer.addFrame(jitterFrame)
+            }
+            
+            // Playback loop - consume from jitter buffer
+            Log.i(TAG, "Starting playback from jitter buffer")
+            while (!Thread.currentThread().isInterrupted) {
+                val jitterFrame = jitterBuffer.getFrame(100)
+                    ?: break // Buffer empty, stream ended
+                
+                val decoded: Int = AudioCodecDefines.CODEC.decode(decodedBuffer, jitterFrame.ulawData, jitterFrame.ulawData.size, 0)
                 if (decoded > 0) {
                     val written = audioTrack.write(decodedBuffer, 0, decoded)
                     if (written < 0) {
@@ -268,11 +328,13 @@ class ListenService : Service() {
                     onUpdate?.invoke()
                 }
             }
+            
             return true
         } catch (e: Exception) {
             Log.e(TAG, "Connection failed", e)
             return false
         } finally {
+            jitterBuffer.clear()
             try {
                 audioTrack.stop()
             } catch (e: IllegalStateException) {
@@ -302,5 +364,9 @@ class ListenService : Service() {
         private const val TAG = "ListenService"
         const val CHANNEL_ID = TAG
         const val ID = 902938409
+        private const val MAX_RECONNECT_ATTEMPTS = 5
+        private const val RECONNECT_DELAY_MS = 2000L
+        private const val STREAM_DISRUPTED_MS = 5000L
+        private const val STREAM_LOST_MS = 10000L
     }
 }
