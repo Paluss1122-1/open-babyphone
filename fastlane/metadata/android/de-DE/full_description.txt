@@ -1,4 +1,0 @@
-<p>Cloudfreies Android-Babyfon fuer LAN und VPN.</p>
-<p>Open Babyphone laesst zwei Androidgeraete als Babyfon fungieren. Das erste Geraet bleibt im Kinderzimmer und streamt Audio ueber das Netzwerk. Das zweite Geraet wird von den Eltern genutzt und empfaengt den Audiostream.</p>
-<p>Dieses Projekt ist ein unabhaengiger Fork von Child Monitor, welches wiederum ein Fork von Protect Baby Monitor ist.</p>
-<p>Open Babyphone funktioniert auf Android 5.0 (Lollipop) und neuer, d.h. ab Android SDK 21.</p>
