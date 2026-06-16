@@ -130,7 +130,7 @@ class ListenService : Service() {
                 val socket = Socket(address, port)
                 socket.soTimeout = 30_000
                 sendPairingCode(socket, pairingCode)
-                val success = streamAudio(socket)
+                val success = streamAudio(socket, pairingCode)
                 if (!success) {
                     playAlert()
                     onError?.invoke()
@@ -151,7 +151,7 @@ class ListenService : Service() {
         out.flush()
     }
 
-    private fun streamAudio(socket: Socket): Boolean {
+    private fun streamAudio(socket: Socket, pairingCode: String?): Boolean {
         Log.i(TAG, "Setting up stream")
         val audioTrack = AudioTrack(AudioManager.STREAM_MUSIC,
             frequency,
@@ -173,16 +173,51 @@ class ListenService : Service() {
             return false
         }
 
-        val readBuffer = ByteArray(byteBufferSize)
+        val key: ByteArray? = if (!pairingCode.isNullOrBlank()) {
+            CryptoHelper.deriveKey(pairingCode)
+        } else {
+            null
+        }
+        var receiveCounter = 0L
+
         val decodedBuffer = ShortArray(byteBufferSize * 2)
         try {
             while (!Thread.currentThread().isInterrupted) {
-                val len = inputStream.read(readBuffer)
-                if (len < 0) {
-                    // If the current thread was not interrupted this means the remote stopped streaming
+                val lengthBuffer = ByteArray(2)
+                val lenResult = inputStream.read(lengthBuffer)
+                if (lenResult < 0) {
                     return Thread.currentThread().isInterrupted
                 }
-                val decoded: Int = AudioCodecDefines.CODEC.decode(decodedBuffer, readBuffer, len, 0)
+                if (lenResult < 2) {
+                    Log.e(TAG, "Incomplete length prefix")
+                    return false
+                }
+                val ciphertextLen = ((lengthBuffer[0].toInt() and 0xFF) shl 8) or (lengthBuffer[1].toInt() and 0xFF)
+
+                val ciphertext = ByteArray(ciphertextLen)
+                var bytesRead = 0
+                while (bytesRead < ciphertextLen) {
+                    val chunk = inputStream.read(ciphertext, bytesRead, ciphertextLen - bytesRead)
+                    if (chunk < 0) {
+                        Log.e(TAG, "Incomplete ciphertext read")
+                        return false
+                    }
+                    bytesRead += chunk
+                }
+
+                val ulawBuffer: ByteArray
+                if (key != null) {
+                    val decrypted = CryptoHelper.decryptChunk(ciphertext, key, receiveCounter++)
+                        ?: run {
+                            Log.e(TAG, "Decryption failed - auth tag mismatch")
+                            return false
+                        }
+                    ulawBuffer = decrypted
+                } else {
+                    ulawBuffer = ciphertext
+                }
+
+                val decoded: Int = AudioCodecDefines.CODEC.decode(decodedBuffer, ulawBuffer, ulawBuffer.size, 0)
                 if (decoded > 0) {
                     audioTrack.write(decodedBuffer, 0, decoded)
                     val decodedBytes = ShortArray(decoded)

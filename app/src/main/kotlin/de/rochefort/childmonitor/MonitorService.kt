@@ -106,12 +106,19 @@ class MonitorService : Service() {
                     bufferSize
             )
         } catch (e: SecurityException) {
-            // This should never happen, we asked for permission before
             throw RuntimeException(e)
         }
         val pcmBufferSize = bufferSize * 2
         val pcmBuffer = ShortArray(pcmBufferSize)
         val ulawBuffer = ByteArray(pcmBufferSize)
+        
+        val key: ByteArray? = if (pairingCode.isNotEmpty()) {
+            CryptoHelper.deriveKey(pairingCode)
+        } else {
+            null
+        }
+        var sendCounter = 0L
+        
         try {
             audioRecord.startRecording()
             val out = socket.getOutputStream()
@@ -120,7 +127,20 @@ class MonitorService : Service() {
             while (socket.isConnected && (this.currentSocket != null) && !Thread.currentThread().isInterrupted) {
                 val read = audioRecord.read(pcmBuffer, 0, bufferSize)
                 val encoded: Int = AudioCodecDefines.CODEC.encode(pcmBuffer, read, ulawBuffer, 0)
-                out.write(ulawBuffer, 0, encoded)
+                
+                val outBytes: ByteArray
+                if (key != null) {
+                    val encrypted = CryptoHelper.encryptChunk(ulawBuffer.copyOf(encoded), key, sendCounter++)
+                    val lengthPrefix = byteArrayOf(
+                        ((encrypted.size ushr 8) and 0xFF).toByte(),
+                        (encrypted.size and 0xFF).toByte()
+                    )
+                    outBytes = lengthPrefix + encrypted
+                } else {
+                    outBytes = ulawBuffer.copyOf(encoded)
+                }
+                
+                out.write(outBytes)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Connection failed", e)
