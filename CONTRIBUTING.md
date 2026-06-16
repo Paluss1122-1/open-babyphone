@@ -53,7 +53,7 @@ By submitting a pull request, you confirm that:
 - The contribution is your own work, or you have permission to submit it
 - You understand the contribution will be publicly available under GPLv3
 
-No real name or public email address is required. You may use your GitHub username or a pseudonym.
+You may use your GitHub username or any name you prefer.
 
 ## Submit Patch(es) for Review
 
