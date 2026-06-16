@@ -97,6 +97,15 @@ class MonitorService : Service() {
         val channelConfiguration: Int = AudioCodecDefines.CHANNEL_CONFIGURATION_IN
         val audioEncoding: Int = AudioCodecDefines.ENCODING
         val bufferSize = AudioRecord.getMinBufferSize(frequency, channelConfiguration, audioEncoding)
+        
+        if (bufferSize <= 0) {
+            Log.e(TAG, "Invalid audio buffer size: $bufferSize")
+            ma?.runOnUiThread {
+                Toast.makeText(ma, "Microphone not available - is another app using it?", Toast.LENGTH_LONG).show()
+            }
+            return
+        }
+        
         val audioRecord: AudioRecord = try {
             AudioRecord(
                     MediaRecorder.AudioSource.MIC,
@@ -107,7 +116,23 @@ class MonitorService : Service() {
             )
         } catch (e: SecurityException) {
             throw RuntimeException(e)
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "AudioRecord initialization failed", e)
+            ma?.runOnUiThread {
+                Toast.makeText(ma, "Microphone not available", Toast.LENGTH_LONG).show()
+            }
+            return
         }
+        
+        if (audioRecord.state != AudioRecord.STATE_INITIALIZED) {
+            Log.e(TAG, "AudioRecord not initialized properly")
+            audioRecord.release()
+            ma?.runOnUiThread {
+                Toast.makeText(ma, "Microphone not available", Toast.LENGTH_LONG).show()
+            }
+            return
+        }
+        
         val pcmBufferSize = bufferSize * 2
         val pcmBuffer = ShortArray(pcmBufferSize)
         val ulawBuffer = ByteArray(pcmBufferSize)
@@ -123,9 +148,14 @@ class MonitorService : Service() {
             audioRecord.startRecording()
             val out = socket.getOutputStream()
             socket.sendBufferSize = pcmBufferSize
+            socket.soTimeout = 20_000
             Log.d(TAG, "Socket send buffer size: " + socket.sendBufferSize)
             while (socket.isConnected && (this.currentSocket != null) && !Thread.currentThread().isInterrupted) {
                 val read = audioRecord.read(pcmBuffer, 0, bufferSize)
+                if (read < 0) {
+                    Log.e(TAG, "AudioRecord read error: $read")
+                    break
+                }
                 val encoded: Int = AudioCodecDefines.CODEC.encode(pcmBuffer, read, ulawBuffer, 0)
                 
                 val outBytes: ByteArray
@@ -145,7 +175,12 @@ class MonitorService : Service() {
         } catch (e: Exception) {
             Log.e(TAG, "Connection failed", e)
         } finally {
-            audioRecord.stop()
+            try {
+                audioRecord.stop()
+            } catch (e: IllegalStateException) {
+                Log.d(TAG, "AudioRecord already stopped")
+            }
+            audioRecord.release()
         }
     }
 
@@ -166,7 +201,7 @@ class MonitorService : Service() {
         val foregroundServiceType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE else 0 // Keep the linter happy
         ServiceCompat.startForeground(this, ID, n, foregroundServiceType)
         ensureMonitorThread()
-        return START_REDELIVER_INTENT
+        return START_NOT_STICKY
     }
 
     private fun ensureMonitorThread() {

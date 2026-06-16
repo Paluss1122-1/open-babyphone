@@ -26,14 +26,15 @@ privacy, and modernization before larger feature work.
 - ✅ Use 2-byte length prefix per chunk for robust TCP framing.
 - ✅ Use 64-bit counter as nonce (big-endian, zero-padded to 12 bytes).
 
-## 4. Harden Audio and Foreground Services
+## 4. Harden Audio and Foreground Services ✅
 
-- Validate `AudioRecord` and `AudioTrack` buffer sizes and initialization state.
-- Handle negative `read()`/`write()` return values and audio device failures.
-- Always stop and release audio resources safely.
-- Rework foreground service behavior for modern Android versions.
-- Add/request `POST_NOTIFICATIONS` for Android 13+.
-- Avoid `START_REDELIVER_INTENT` for microphone recording services that should only start from explicit user action.
+- ✅ Validate `AudioRecord` and `AudioTrack` buffer sizes and initialization state.
+- ✅ Handle negative `read()`/`write()` return values and audio device failures.
+- ✅ Always stop and release audio resources safely (`release()` calls added).
+- ✅ Rework foreground service behavior for modern Android versions.
+- ✅ Add/request `POST_NOTIFICATIONS` for Android 13+.
+- ✅ Changed `START_REDELIVER_INTENT` to `START_NOT_STICKY` for explicit user control.
+- ✅ Socket timeout set to 20 seconds for timely stream-loss detection.
 
 ## 5. Modernize the Network Protocol
 

@@ -20,6 +20,7 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -35,20 +36,20 @@ class StartActivity : Activity() {
         val monitorButton = findViewById<Button>(R.id.useChildDevice)
         monitorButton.setOnClickListener { _: View? ->
             Log.i(TAG, "Starting up monitor")
-            if (isAudioRecordingPermissionGranted) {
+            if (isAudioRecordingPermissionGranted && isNotificationPermissionGranted) {
                 startActivity(Intent(applicationContext, MonitorActivity::class.java))
             } else {
-                requestAudioPermission()
+                requestMonitorPermissions()
             }
         }
         val connectButton = findViewById<Button>(R.id.useParentDevice)
         connectButton.setOnClickListener { _: View? ->
             Log.i(TAG, "Starting connection activity")
-            if (isMulticastPermissionGranted) {
+            if (isMulticastPermissionGranted && isNotificationPermissionGranted) {
                 val i = Intent(applicationContext, DiscoverActivity::class.java)
                 startActivity(i)
             } else {
-                requestMulticastPermission()
+                requestDiscoverPermissions()
             }
         }
     }
@@ -59,6 +60,40 @@ class StartActivity : Activity() {
     private val isAudioRecordingPermissionGranted: Boolean
         get() = (ContextCompat.checkSelfPermission(this@StartActivity, Manifest.permission.RECORD_AUDIO)
                 == PackageManager.PERMISSION_GRANTED)
+    private val isNotificationPermissionGranted: Boolean
+        get() = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                (ContextCompat.checkSelfPermission(this@StartActivity, Manifest.permission.POST_NOTIFICATIONS)
+                == PackageManager.PERMISSION_GRANTED)
+
+    private fun requestMonitorPermissions() {
+        val permissions = mutableListOf<String>()
+        if (!isAudioRecordingPermissionGranted) {
+            permissions.add(Manifest.permission.RECORD_AUDIO)
+        }
+        if (!isNotificationPermissionGranted) {
+            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        if (permissions.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this@StartActivity, permissions.toTypedArray(),
+                    PERMISSIONS_REQUEST_RECORD_AUDIO)
+        }
+    }
+
+    private fun requestDiscoverPermissions() {
+        val permissions = mutableListOf<String>()
+        if (!isMulticastPermissionGranted) {
+            permissions.add(Manifest.permission.CHANGE_WIFI_MULTICAST_STATE)
+        }
+        if (!isNotificationPermissionGranted) {
+            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        if (permissions.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this@StartActivity, permissions.toTypedArray(),
+                    PERMISSIONS_REQUEST_MULTICAST)
+        } else {
+            startActivity(Intent(applicationContext, DiscoverActivity::class.java))
+        }
+    }
 
     private fun requestAudioPermission() {
         ActivityCompat.requestPermissions(this@StartActivity, arrayOf(Manifest.permission.RECORD_AUDIO),

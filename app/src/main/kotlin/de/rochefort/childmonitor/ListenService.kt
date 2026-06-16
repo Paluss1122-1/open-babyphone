@@ -69,7 +69,7 @@ class ListenService : Service() {
             val pairingCode = it.getString("pairingCode")
             doListen(address, port, pairingCode)
         }
-        return START_REDELIVER_INTENT
+        return START_NOT_STICKY
     }
 
     override fun onDestroy() {
@@ -153,23 +153,40 @@ class ListenService : Service() {
 
     private fun streamAudio(socket: Socket, pairingCode: String?): Boolean {
         Log.i(TAG, "Setting up stream")
-        val audioTrack = AudioTrack(AudioManager.STREAM_MUSIC,
-            frequency,
-            channelConfiguration,
-            audioEncoding,
-            bufferSize,
-            AudioTrack.MODE_STREAM)
+        val audioTrack = try {
+            AudioTrack(AudioManager.STREAM_MUSIC,
+                frequency,
+                channelConfiguration,
+                audioEncoding,
+                bufferSize,
+                AudioTrack.MODE_STREAM)
+        } catch (e: IllegalArgumentException) {
+            Log.e(TAG, "AudioTrack initialization failed - invalid parameters", e)
+            return false
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "AudioTrack initialization failed", e)
+            return false
+        }
+
+        if (audioTrack.state != AudioTrack.STATE_INITIALIZED) {
+            Log.e(TAG, "AudioTrack not initialized properly")
+            audioTrack.release()
+            return false
+        }
+
         try {
             audioTrack.play()
-        } catch (e : java.lang.IllegalStateException) {
-            Log.e(TAG, "Failed to play streamed audio audio for other reason", e)
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Failed to start AudioTrack playback", e)
+            audioTrack.release()
             return false
         }
 
         val inputStream = try {
             socket.getInputStream()
         } catch (e: IOException) {
-            Log.e(TAG, "Failed to read audio audio for socket", e)
+            Log.e(TAG, "Failed to get input stream from socket", e)
+            audioTrack.release()
             return false
         }
 
@@ -219,7 +236,11 @@ class ListenService : Service() {
 
                 val decoded: Int = AudioCodecDefines.CODEC.decode(decodedBuffer, ulawBuffer, ulawBuffer.size, 0)
                 if (decoded > 0) {
-                    audioTrack.write(decodedBuffer, 0, decoded)
+                    val written = audioTrack.write(decodedBuffer, 0, decoded)
+                    if (written < 0) {
+                        Log.e(TAG, "AudioTrack write error: $written")
+                        return false
+                    }
                     val decodedBytes = ShortArray(decoded)
                     System.arraycopy(decodedBuffer, 0, decodedBytes, 0, decoded)
                     volumeHistory.onAudioData(decodedBytes)
@@ -231,8 +252,17 @@ class ListenService : Service() {
             Log.e(TAG, "Connection failed", e)
             return false
         } finally {
-            audioTrack.stop()
-            socket.close()
+            try {
+                audioTrack.stop()
+            } catch (e: IllegalStateException) {
+                Log.d(TAG, "AudioTrack already stopped")
+            }
+            audioTrack.release()
+            try {
+                socket.close()
+            } catch (e: IOException) {
+                Log.d(TAG, "Failed to close socket", e)
+            }
         }
     }
 
