@@ -53,8 +53,6 @@ By submitting a pull request, you confirm that:
 - The contribution is your own work, or you have permission to submit it
 - You understand the contribution will be publicly available under GPLv3
 
-You may use your GitHub username or any name you prefer.
-
 ## Submit Patch(es) for Review
 
 Finally, you will need to submit your patches so that they can be reviewed
