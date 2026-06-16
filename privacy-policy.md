@@ -3,6 +3,9 @@
 This privacy policy governs your use of the software application Open Babyphone (“Application”) for mobile devices.
 The Application is a simple network based baby monitor.
 
+Open Babyphone is an independent fork of Child Monitor. This privacy policy applies to the Open Babyphone fork
+maintained at https://github.com/digitalesIch/open-babyphone.
+
 # What information does the Application obtain and how is it used?
 
 The Application allows one device (a parent device) to listen to the microphone of a second device
@@ -52,7 +55,7 @@ not delete such emails.
 
 This Application is not used to knowingly solicit data from or market to children under the age of 13. If a parent or
 guardian becomes aware that his or her child has provided us with information without their consent, he or she should
-contact me at github@rochefort.de. I will delete such information from my files within a reasonable time.
+contact me at digitalesich@gmail.com. I will delete such information from my files within a reasonable time.
 
 # Security
 
@@ -69,8 +72,8 @@ only transfer data through otherwise secured channels.
 This Privacy Policy may be updated from time to time for any reason. I will notify you of any changes to this
 Privacy Policy by posting the new Privacy Policy here. You are advised to consult this Privacy Policy regularly
 for any changes, as continued use is deemed approval of all changes. You can check the history of this policy by
-checking this history of this file in GitHub.
+checking the history of this file at https://github.com/digitalesIch/open-babyphone.
 
 # Contact me
 If you have any questions regarding privacy while using the Application, or have questions about our practices,
-please contact me via email at github@rochefort.de.
+please contact me via email at digitalesich@gmail.com.
