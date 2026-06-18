@@ -24,4 +24,4 @@ Please confirm that your proposal:
 - [ ] Does not require a central server, relay, cloud account, remote-access service, or paid SaaS infrastructure
 - [ ] Works on the same Wi-Fi or local network
 - [ ] Treats trusted VPN use only as an advanced manual setup, not as a remote-access product goal
-- [ ] Is compatible with Android 5.0+ (SDK 21)
+- [ ] Is compatible with Android 11+ (SDK 30)

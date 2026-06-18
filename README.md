@@ -13,7 +13,7 @@ are higher priorities than internet-based remote access.
 The project is an independent fork of _Child Monitor_, which itself is a fork of
 _Protect Baby Monitor_. The original projects remain credited and licensed under GPLv3.
 
-_Open Babyphone_ works on Android 5.0 (Lollipop) and newer, i.e. Android SDK 21.
+_Open Babyphone_ works on Android 11 (R) and newer, i.e. Android SDK 30.
 
 # Advanced: Trusted VPNs
 

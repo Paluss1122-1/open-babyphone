@@ -12,12 +12,12 @@
 - Gradle wrapper is 8.6; Android Gradle Plugin is 8.2.2; Kotlin is 1.9.22.
 - Use JDK 21; Gradle emits Java 17 bytecode (`sourceCompatibility`, `targetCompatibility`, Kotlin `jvmTarget`) and sets `jvmToolchain(21)`.
 - CI/release-grade verification is exactly `./gradlew assembleRelease testReleaseUnitTest lintRelease`; CI installs Android SDK platform/build-tools 34 first.
-- Useful focused checks are `./gradlew testReleaseUnitTest`, `./gradlew lintRelease`, and `./gradlew assembleRelease`.
-- Unit tests live under `app/src/test/kotlin`; there are currently no `app/src/androidTest` sources.
+- Useful focused checks are `./gradlew testReleaseUnitTest`, `./gradlew assembleDebugAndroidTest`, `./gradlew lintRelease`, and `./gradlew assembleRelease`.
+- Local JVM tests live under `app/src/test/kotlin`; Android instrumentation tests live under `app/src/androidTest/kotlin` for Android/JNI runtime coverage such as libsodium crypto.
 - Lint aborts on errors; `MissingTranslation` is downgraded to a warning in `app/build.gradle`.
 
 ## Android Config Gotchas
-- `compileSdk`/`targetSdk` are 34; `minSdkVersion` is 21 and README promises Android 5.0+.
+- `compileSdk`/`targetSdk` are 34; `minSdkVersion` is 30 and README promises Android 11+.
 - Gradle `defaultConfig` has the effective release version (`versionCode 15`, `versionName "1.0.0"`); the manifest does not define version fields.
 - `project.properties` is a generated legacy Android Tools file targeting `android-25`; do not edit it for Gradle behavior.
 - `gradle.properties` enables AndroidX, disables Jetifier, enables configuration cache, and uses non-transitive/non-final R classes.
