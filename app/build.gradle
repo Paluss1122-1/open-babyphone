@@ -34,12 +34,15 @@ android {
         warning 'MissingTranslation'
     }
     compileOptions {
-        // Sets Java compatibility to Java 21
-        sourceCompatibility JavaVersion.VERSION_21
-        targetCompatibility JavaVersion.VERSION_21
+        // AGP 8.2 lint cannot analyze Java 21 class files reliably.
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     kotlin {
         jvmToolchain(21)
+    }
+    kotlinOptions {
+        jvmTarget = '17'
     }
     testOptions {
         unitTests {

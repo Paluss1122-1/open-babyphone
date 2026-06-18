@@ -64,7 +64,7 @@ class MonitorService : Service() {
             val pairingCodeText = ma.findViewById<TextView>(R.id.pairingCodeField)
             pairingCodeText.text = pairingCode
             val clientCountText = ma.findViewById<TextView>(R.id.clientCount)
-            clientCountText.text = "Connected: ${clientManager.getClientCount()} parents"
+            clientCountText.text = ma.getString(R.string.connected_clients, clientManager.getClientCount())
         }
     }
 
@@ -260,9 +260,14 @@ class MonitorService : Service() {
                         while (clientManager.canAcceptMoreClients() &&
                                 this.connectionToken == currentToken &&
                                 !Thread.currentThread().isInterrupted) {
-                            serverSocket.accept().use { socket ->
-                                Log.i(TAG, "Connection from parent device received")
-                                handleClient(socket)
+                            val socket = serverSocket.accept()
+                            Log.i(TAG, "Connection from parent device received")
+                            if (!handleClient(socket)) {
+                                try {
+                                    socket.close()
+                                } catch (e: IOException) {
+                                    Log.d(TAG, "Failed to close rejected parent socket", e)
+                                }
                             }
                         }
                         
@@ -341,7 +346,7 @@ class MonitorService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val serviceChannel = NotificationChannel(
                     CHANNEL_ID,
-                    "Foreground Service Channel",
+                    getString(R.string.foreground_service_channel),
                     NotificationManager.IMPORTANCE_DEFAULT
             )
             this.notificationManager.createNotificationChannel(serviceChannel)
@@ -349,7 +354,7 @@ class MonitorService : Service() {
     }
 
     private fun buildNotification(): Notification {
-        val text: CharSequence = "Child Device"
+        val text: CharSequence = getText(R.string.childDevice)
         // Set the info for the views that show in the notification panel.
         val b = NotificationCompat.Builder(this, CHANNEL_ID)
         b.setSmallIcon(R.drawable.listening_notification) // the status icon
@@ -391,8 +396,6 @@ class MonitorService : Service() {
         }
         this.currentSocket = null
 
-        // Cancel the persistent notification.
-        this.notificationManager.cancel(R.string.listening)
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         // Tell the user we stopped.
         Toast.makeText(this, R.string.stopped, Toast.LENGTH_SHORT).show()

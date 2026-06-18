@@ -40,4 +40,6 @@
     <string name="settings">Settings</string>
     <string name="theme_mode">Theme</string>
     <string name="connected_clients">Connected: %d parents</string>
+    <string name="connected_clients_initial">Connected: 0 parents</string>
+    <string name="foreground_service_channel">Foreground Service Channel</string>
 </resources>

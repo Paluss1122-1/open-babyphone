@@ -14,8 +14,8 @@ LAN/VPN-based baby monitoring.
 
 ## Build Requirements
 
-Use JDK 21 when building the project. The Android app emits Java 17 bytecode
-for Android tool compatibility.
+Use JDK 21 when building the project. The Android app is configured with
+Java 17 source and target compatibility for Android tool compatibility.
 
 ## Test Your Code
 
@@ -58,7 +58,7 @@ By submitting a pull request, you confirm that:
 Finally, you will need to submit your patches so that they can be reviewed
 and potentially merged into the Open Babyphone repository. The preferred
 way to do this is to submit a Pull Request to the Open Babyphone project.
-Changes need to apply cleanly onto the master branch and pass all
+Changes need to apply cleanly onto the main branch and pass all
 unit tests and produce no errors during static analysis.
 
 ## Language

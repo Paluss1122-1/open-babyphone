@@ -66,14 +66,14 @@ privacy, and modernization before larger feature work.
 - ✅ Status updates: "Connected" → "Connection disrupted..." → "Reconnecting (X/5)..." → "Disconnected".
 - ✅ Separate receive and playback loops (receive fills buffer, playback consumes from buffer).
 
-## 8. Refresh the UI and UX ✅
+## 8. Refresh the UI and UX ◐
 
 - ✅ Replace Holo theme with Material 3 design system.
 - ✅ Full Day/Night support with automatic system-follow.
 - ✅ Manual theme override in Settings (System/Light/Dark).
 - ✅ Blue primary color (calming for nighttime), orange accent (visible alerts).
-- ✅ ConstraintLayout for responsive, robust layouts.
-- ✅ Material components: MaterialButton, MaterialTextView, TextInputLayout.
+- ◐ ConstraintLayout for responsive, robust layouts (start screen complete; remaining screens still use legacy XML layouts).
+- ◐ Material components where currently migrated (start screen complete; remaining screens still use platform widgets).
 - ✅ Accessibility improvements: content descriptions, label associations.
 - ✅ Settings Activity for theme preferences.
 - ✅ OpenBabyphoneApplication for theme persistence across restarts.

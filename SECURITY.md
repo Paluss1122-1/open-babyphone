@@ -31,9 +31,10 @@ We take security issues seriously. If you discover a vulnerability, please repor
 ## Current Security Considerations
 
 This app is designed for LAN and VPN use. Known limitations:
-- Audio streaming uses plaintext TCP sockets (no TLS/encryption)
-- Pairing codes are transmitted in plaintext
-- Pairing codes are stored in SharedPreferences
+- Audio streaming is encrypted with ChaCha20-Poly1305 only when a non-empty pairing code is configured
+- Empty pairing code means no authentication and no transport encryption
+- Pairing codes are transmitted in plaintext during connection setup
+- Pairing codes are stored in SharedPreferences and are excluded from Android backups
 
 These are documented design decisions. Please do not report them as vulnerabilities unless you have a concrete, low-maintenance improvement that aligns with the project's no-cloud constraints.
 
