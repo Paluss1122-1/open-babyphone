@@ -32,11 +32,21 @@
 
 ## Fork Direction
 - This repository is now developed as an independent fork named `Open Babyphone` under `digitalesIch/open-babyphone`.
-- Treat `origin` as the `digitalesIch/open-babyphone` fork and `upstream` as the original `enguerrand/child-monitor` project.
-- **CRITICAL: Never create GitHub issues, PRs, or discussions in `enguerrand/child-monitor` unless explicitly requested.**
-- Upstream PRs to `enguerrand/child-monitor` should be limited to small maintenance fixes unless explicitly requested.
+- Treat `origin` as the active repository (`digitalesIch/open-babyphone`) and `upstream`/`enguerrand/child-monitor` as reference-only.
+- **CRITICAL: Never create, edit, close, or comment on GitHub issues, PRs, or discussions in `enguerrand/child-monitor` unless explicitly requested.**
+- Upstream PRs to `enguerrand/child-monitor` should be limited to small maintenance fixes after explicit user request.
 - Larger roadmap work, product decisions, UI changes, authentication, reconnect behavior, multi-client support, and releases belong in this fork.
 - Keep upstream attribution and GPLv3 license notices intact.
+
+## Repository Rules
+- **All new issues and PRs go to the fork** (`digitalesIch/open-babyphone`), never to upstream.
+- **All `gh` commands that read or write issues, PRs, releases, workflow runs, checks, discussions, or repository settings MUST explicitly target `digitalesIch/open-babyphone` using `--repo digitalesIch/open-babyphone` or the `digitalesIch/open-babyphone` repository argument when a command does not support `--repo`, except `gh repo set-default` itself.**
+- Do not rely on the implicit `gh` default repository. GitHub CLI can resolve forked workspaces to the parent repository unless `gh repo set-default digitalesIch/open-babyphone` is set locally.
+- Before creating, editing, closing, or commenting on an issue/PR, verify that the target URL starts with `https://github.com/digitalesIch/open-babyphone/`.
+- If an upstream issue/PR was already closed or redirected by mistake, do not add more comments there unless the user explicitly asks.
+- Git fetch/push to upstream should be disabled locally (`git remote set-url upstream DISABLED` and `git remote set-url --push upstream DISABLED`) unless the user explicitly requests upstream maintenance work.
+- Bug reports, security issues, feature requests, and roadmap items **must** be created in the fork's issue tracker.
+- The only exception for upstream interaction: small maintenance fixes (typos, build warnings) after explicit user request.
 
 ## Documentation Synchronization
 
