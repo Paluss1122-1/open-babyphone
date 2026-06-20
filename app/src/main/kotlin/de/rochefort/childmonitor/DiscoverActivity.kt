@@ -112,8 +112,8 @@ class DiscoverActivity : Activity() {
         val multicastReleaser = {
             try {
                 multicastLock.release()
-            } catch (ignored: Exception) {
-                // don't really care
+            } catch (e: Exception) {
+                Log.d(TAG, "Failed to release multicastLock: ${e.message}")
             }
         }
         val serviceTable = findViewById<ListView>(R.id.ServiceTable)
